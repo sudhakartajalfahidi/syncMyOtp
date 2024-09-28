@@ -1,4 +1,4 @@
-name: otp sync
+name: Android APK Build
 
 on:
   push:
@@ -31,15 +31,20 @@ jobs:
           java-version: '11'
           cache: gradle
 
-      - name: Install Android SDK
+      - name: Install Android SDK and Tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y openjdk-11-jdk
-          yes | sdkmanager "platform-tools" "platforms;android-31" "build-tools;31.0.0"
+          sudo apt-get install -y wget unzip
+          wget https://dl.google.com/android/repository/commandlinetools-linux-8512546_latest.zip -O commandlinetools.zip
+          mkdir -p $HOME/cmdline-tools && unzip commandlinetools.zip -d $HOME/cmdline-tools
+          export ANDROID_HOME=$HOME/cmdline-tools
+          export PATH=$ANDROID_HOME/cmdline-tools/bin:$ANDROID_HOME/platform-tools:$PATH
+          yes | sdkmanager --sdk_root=$ANDROID_HOME "platform-tools" "platforms;android-31" "build-tools;31.0.0"
 
       - name: Build APK
         run: |
           cd android
+          chmod +x ./gradlew  # Ensure Gradle wrapper is executable
           ./gradlew assembleDebug
 
       - name: Upload APK
