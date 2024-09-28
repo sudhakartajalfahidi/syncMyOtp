@@ -36,9 +36,10 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y wget unzip
           wget https://dl.google.com/android/repository/commandlinetools-linux-8512546_latest.zip -O commandlinetools.zip
-          mkdir -p $HOME/cmdline-tools && unzip commandlinetools.zip -d $HOME/cmdline-tools
-          export ANDROID_HOME=$HOME/cmdline-tools
-          export PATH=$ANDROID_HOME/cmdline-tools/bin:$ANDROID_HOME/platform-tools:$PATH
+          mkdir -p $HOME/android-sdk/cmdline-tools
+          unzip -q commandlinetools.zip -d $HOME/android-sdk/cmdline-tools
+          export ANDROID_HOME=$HOME/android-sdk
+          export PATH=$ANDROID_HOME/cmdline-tools/bin:$ANDROID_HOME/platform-tools:$ANDROID_HOME/emulator:$ANDROID_HOME/tools:$ANDROID_HOME/tools/bin:$PATH
           yes | sdkmanager --sdk_root=$ANDROID_HOME "platform-tools" "platforms;android-31" "build-tools;31.0.0"
 
       - name: Build APK
