@@ -24,7 +24,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v2
         with:
-          node-version: '16.x'
+          node-version: '20.17' 
 
       - name: Install dependencies
         run: |
@@ -47,7 +47,7 @@ jobs:
           xcodebuild -workspace YourApp.xcworkspace -scheme YourApp -sdk iphoneos -configuration Release
 
       - name: Upload Build Artifact
-        uses: actions/upload-artifact@v3 # Update to v3 here
+        uses: actions/upload-artifact@v3 
         with:
           name: app-build
           path: |
