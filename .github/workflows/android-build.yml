@@ -1,4 +1,4 @@
-name: Build React Native App
+name: Build React Native Android APK
 
 on:
   push:
@@ -10,12 +10,8 @@ on:
 
 jobs:
   build:
-    name: Build React Native App
-    runs-on: ubuntu-latest
-
-    strategy:
-      matrix:
-        os: [ubuntu-latest, macos-latest]
+    name: Build Android APK on macOS
+    runs-on: macos-latest
 
     steps:
       - name: Checkout code
@@ -24,23 +20,30 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v2
         with:
-          node-version: '20.17' 
+          node-version: '20.17' # Using Node.js 20.17
 
       - name: Install dependencies
         run: |
           yarn install
 
+      - name: Install Android SDK
+        run: |
+          brew install --cask android-sdk
+          export ANDROID_SDK_ROOT=$HOME/Library/Android/sdk
+          yes | sdkmanager --licenses
+
       - name: Install React Native CLI
         run: |
           npm install -g react-native-cli
 
-      - name: Build for Android
-        if: matrix.os == 'ubuntu-latest'
+      - name: Build Android APK
         run: |
-          cd android && ./gradlew assembleRelease
-      - name: Upload Build Artifact
-        uses: actions/upload-artifact@v3 
+          cd android
+          ./gradlew assembleRelease
+
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v3
         with:
-          name: app-build
+          name: android-apk
           path: |
-            android/app/build/outputs/apk/release/app-release.apk # Update this path based on your project
+            android/app/build/outputs/apk/release/app-release.apk
