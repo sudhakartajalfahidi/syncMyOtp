@@ -26,12 +26,6 @@ jobs:
         run: |
           yarn install
 
-      - name: Install Android SDK
-        run: |
-          brew install --cask android-sdk
-          export ANDROID_SDK_ROOT=$HOME/Library/Android/sdk
-          yes | sdkmanager --licenses
-
       - name: Install React Native CLI
         run: |
           npm install -g react-native-cli
