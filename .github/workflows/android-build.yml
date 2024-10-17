@@ -38,14 +38,6 @@ jobs:
         if: matrix.os == 'ubuntu-latest'
         run: |
           cd android && ./gradlew assembleRelease
-
-      - name: Build for iOS
-        if: matrix.os == 'macos-latest'
-        run: |
-          cd ios
-          pod install
-          xcodebuild -workspace YourApp.xcworkspace -scheme YourApp -sdk iphoneos -configuration Release
-
       - name: Upload Build Artifact
         uses: actions/upload-artifact@v3 
         with:
