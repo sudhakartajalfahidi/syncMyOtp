@@ -20,7 +20,15 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v2
         with:
-          node-version: '20.17' # Using Node.js 20.17
+          node-version: '20.17' 
+
+      - name: Cache Node.js modules
+        uses: actions/cache@v2
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
 
       - name: Install dependencies
         run: |
@@ -29,6 +37,11 @@ jobs:
       - name: Install React Native CLI
         run: |
           npm install -g react-native-cli
+
+      - name: Clean Build
+        run: |
+          cd android
+          ./gradlew clean
 
       - name: Build Android APK
         run: |
@@ -39,5 +52,4 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: android-apk
-          path: |
-            android/app/build/outputs/apk/release/app-release.apk
+          path: android/app/build/outputs/apk/release/app-release.apk
