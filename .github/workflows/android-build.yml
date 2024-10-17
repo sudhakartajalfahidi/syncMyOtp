@@ -16,7 +16,6 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest]
-        # If you want to specify building for Android only or iOS only, you can adjust the matrix
 
     steps:
       - name: Checkout code
@@ -25,7 +24,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v2
         with:
-          node-version: '20.17'
+          node-version: '16.x'
 
       - name: Install dependencies
         run: |
@@ -45,18 +44,11 @@ jobs:
         run: |
           cd ios
           pod install
-          xcodebuild -workspace YourApp.xcworkspace -scheme YourApp -sdk iphoneos -configuration Release archive -archivePath $PWD/build/YourApp.xcarchive
+          xcodebuild -workspace YourApp.xcworkspace -scheme YourApp -sdk iphoneos -configuration Release
 
-      - name: Upload Android APK
-        if: matrix.os == 'ubuntu-latest'
-        uses: actions/upload-artifact@v2
+      - name: Upload Build Artifact
+        uses: actions/upload-artifact@v3 # Update to v3 here
         with:
-          name: android-apk
-          path: android/app/build/outputs/apk/release/app-release.apk
-
-      - name: Upload iOS IPA
-        if: matrix.os == 'macos-latest'
-        uses: actions/upload-artifact@v2
-        with:
-          name: ios-ipa
-          path: ios/build/YourApp.xcarchive
+          name: app-build
+          path: |
+            android/app/build/outputs/apk/release/app-release.apk # Update this path based on your project
