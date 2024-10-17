@@ -1,4 +1,4 @@
-name: Android APK Build
+name: Build React Native App
 
 on:
   push:
@@ -9,47 +9,54 @@ on:
       - main
 
 jobs:
-  build-android:
+  build:
+    name: Build React Native App
     runs-on: ubuntu-latest
 
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        # If you want to specify building for Android only or iOS only, you can adjust the matrix
+
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v2
 
       - name: Set up Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v2
         with:
-          node-version: '20.17.0'  # Explicitly using Node.js 20
+          node-version: '20.17'
 
-      - name: Install Dependencies
-        run: npm install
-
-      - name: Set up JDK
-        uses: actions/setup-java@v3
-        with:
-          distribution: 'zulu'
-          java-version: '11'
-          cache: gradle
-
-      - name: Install Android SDK and Tools
+      - name: Install dependencies
         run: |
-          sudo apt-get update
-          sudo apt-get install -y wget unzip
-          wget https://dl.google.com/android/repository/commandlinetools-linux-8512546_latest.zip -O commandlinetools.zip
-          mkdir -p $HOME/android-sdk/cmdline-tools
-          unzip -q commandlinetools.zip -d $HOME/android-sdk/cmdline-tools
-          export ANDROID_HOME=$HOME/android-sdk
-          export PATH=$ANDROID_HOME/cmdline-tools/bin:$ANDROID_HOME/platform-tools:$ANDROID_HOME/emulator:$ANDROID_HOME/tools:$ANDROID_HOME/tools/bin:$PATH
-          yes | sdkmanager --sdk_root=$ANDROID_HOME "platform-tools" "platforms;android-31" "build-tools;31.0.0"
+          yarn install
 
-      - name: Build APK
+      - name: Install React Native CLI
         run: |
-          cd android
-          chmod +x ./gradlew  # Ensure Gradle wrapper is executable
-          ./gradlew assembleDebug
+          npm install -g react-native-cli
 
-      - name: Upload APK
-        uses: actions/upload-artifact@v3
+      - name: Build for Android
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          cd android && ./gradlew assembleRelease
+
+      - name: Build for iOS
+        if: matrix.os == 'macos-latest'
+        run: |
+          cd ios
+          pod install
+          xcodebuild -workspace YourApp.xcworkspace -scheme YourApp -sdk iphoneos -configuration Release archive -archivePath $PWD/build/YourApp.xcarchive
+
+      - name: Upload Android APK
+        if: matrix.os == 'ubuntu-latest'
+        uses: actions/upload-artifact@v2
         with:
-          name: app-debug.apk
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          name: android-apk
+          path: android/app/build/outputs/apk/release/app-release.apk
+
+      - name: Upload iOS IPA
+        if: matrix.os == 'macos-latest'
+        uses: actions/upload-artifact@v2
+        with:
+          name: ios-ipa
+          path: ios/build/YourApp.xcarchive
