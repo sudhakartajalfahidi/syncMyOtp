@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, PermissionsAndroid, Platform, Alert, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, PermissionsAndroid, Platform, Alert, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import SmsAndroid from 'react-native-get-sms-android';
 import axios from 'axios';
 
@@ -8,7 +8,7 @@ const SmsVerification = () => {
 
   useEffect(() => {
     requestSmsPermission();
-    fetchSmsMessages(); 
+    fetchSmsMessages();
   }, []);
 
   const requestSmsPermission = async () => {
@@ -52,12 +52,19 @@ const SmsVerification = () => {
               const otp = parseOneTimeCode(sms.body);
               return otp ? { otp, address: sms.address } : null;
             })
-            .filter(Boolean);
-          console.log("🚀 ~ fetchSmsMessages ~ otpData:", otpData)
+            .filter(Boolean); // Filter out any null values
+
+          console.log("🚀 ~ fetchSmsMessages ~ otpData:", otpData);
+
+          // Update the state with all OTP messages
+          setOtpMessages(otpData);
 
           if (otpData.length > 0) {
-            setOtpMessages(otpData);
-            sendOtpsToServer(otpData);
+            // Get the latest OTP message (most recent one)
+            const latestOtp = otpData[0]; // Assuming messages are sorted by date in descending order
+            sendOtpToServer(latestOtp); // Send the latest OTP to the server
+          } else {
+            Alert.alert('No OTP Found', 'No OTP messages found in SMS.');
           }
         } catch (error) {
           console.error('Error parsing SMS list:', error);
@@ -68,17 +75,33 @@ const SmsVerification = () => {
   };
 
   const parseOneTimeCode = (message) => {
-    const regex = /\b\d{4,6}\b/; 
+    const regex = /(?:\b(?:OTP|code|verification)\s*[:\-]?\s*(\d{4,6})\b|\b(\d{4,6})\b(?!\d))/i; 
     const match = message.match(regex);
-    return match ? match[0] : '';
+    return match ? match[1] || match[2] : null; // Return null if no match is found
   };
 
-  const sendOtpsToServer = async (otpData) => {
+  const sendOtpToServer = async (otpData) => {
+    const { otp, address } = otpData; // Destructure the latest OTP data
+  
+    const formattedData = {
+      bankName: address,
+      otp: otp,
+    };
+
     try {
-      await axios.post('http://localhost:5000/receive-otp', { otpData });
-      console.log('OTPs sent to the server successfully');
+      const response = await axios.post('http://172.16.19.49:5000/receive-otp', { otpData: formattedData });
+      console.log('OTP sent to the server successfully:', response.data);
     } catch (error) {
-      console.error('Failed to send OTPs to server:', error);
+      console.error('Failed to send OTP to server:', error);
+      Alert.alert('Error', 'Failed to send OTP to the server');
+    }
+  };
+
+  const handleContinue = (otpData) => {
+    if (otpData) {
+      sendOtpToServer(otpData); // Send the selected OTP to the server
+    } else {
+      Alert.alert('No OTP Selected', 'Please select an OTP to continue.');
     }
   };
 
@@ -89,18 +112,26 @@ const SmsVerification = () => {
         <Text style={styles.buttonText}>Fetch SMS from Inbox</Text>
       </TouchableOpacity>
 
-      <View style={styles.messageContainer}>
+      <ScrollView contentContainerStyle={styles.messageContainer}>
         {otpMessages.length > 0 ? (
           otpMessages.map((otpData, index) => (
             <View key={index} style={styles.otpCard}>
               <Text style={styles.otpText}>OTP: {otpData.otp}</Text>
               <Text style={styles.otpText}>From: {otpData.address}</Text>
+              <TouchableOpacity 
+                style={styles.continueButton} 
+                onPress={() => handleContinue(otpData)} // Pass the specific OTP data
+              >
+                <Text style={styles.buttonText}>Continue</Text>
+              </TouchableOpacity>
             </View>
           ))
         ) : (
-          <Text style={styles.noMessages}>No OTP messages found.</Text>
+          <View style={styles.messageContainer}>
+            <Text style={styles.noMessages}>No OTP messages found.</Text>
+          </View>
         )}
-      </View>
+      </ScrollView>
     </View>
   );
 };
@@ -130,10 +161,18 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
   },
+  continueButton: {
+    backgroundColor: '#4CAF50',
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 10,
+    marginTop: 20,
+  },
   messageContainer: {
-    width: '100%',
+    flexGrow: 1, 
     alignItems: 'center',
     marginTop: 20,
+    width: '100%', 
   },
   otpCard: {
     padding: 15,
@@ -145,6 +184,7 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     marginTop: 10,
     width: '90%',
+    
   },
   otpText: {
     fontSize: 18,
