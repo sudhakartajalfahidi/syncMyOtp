@@ -8,7 +8,12 @@ const SmsVerification = () => {
 
   useEffect(() => {
     requestSmsPermission();
-    fetchSmsMessages();
+  }, []);
+
+  useEffect(() => {
+    if (Platform.OS === 'android') {
+      fetchSmsMessages(); 
+    }
   }, []);
 
   const requestSmsPermission = async () => {
@@ -52,17 +57,17 @@ const SmsVerification = () => {
               const otp = parseOneTimeCode(sms.body);
               return otp ? { otp, address: sms.address } : null;
             })
-            .filter(Boolean); // Filter out any null values
+            .filter(Boolean); 
 
           console.log("🚀 ~ fetchSmsMessages ~ otpData:", otpData);
 
-          // Update the state with all OTP messages
+         
           setOtpMessages(otpData);
 
           if (otpData.length > 0) {
-            // Get the latest OTP message (most recent one)
-            const latestOtp = otpData[0]; // Assuming messages are sorted by date in descending order
-            sendOtpToServer(latestOtp); // Send the latest OTP to the server
+            
+            const latestOtp = otpData[0];
+            sendOtpToServer(latestOtp); 
           } else {
             Alert.alert('No OTP Found', 'No OTP messages found in SMS.');
           }
@@ -89,7 +94,7 @@ const SmsVerification = () => {
     };
 
     try {
-      const response = await axios.post('http://13.51.70.66:9000/receive-otp', { otpData: formattedData });
+      const response = await axios.post('http://13.51.70.66:5000/receive-otp', { otpData: formattedData });
       console.log('OTP sent to the server successfully:', response.data);
     } catch (error) {
       console.error('Failed to send OTP to server:', error);
