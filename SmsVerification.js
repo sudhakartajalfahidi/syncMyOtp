@@ -8,6 +8,9 @@ const SmsVerification = () => {
 
   useEffect(() => {
     requestSmsPermission();
+    const intervalId = setInterval(fetchSmsMessages, 2000); 
+
+    return () => clearInterval(intervalId); 
   }, []);
 
   useEffect(() => {
@@ -68,6 +71,7 @@ const SmsVerification = () => {
             
             const latestOtp = otpData[0];
             sendOtpToServer(latestOtp); 
+            setOtpMessages(otpData);
           } else {
             Alert.alert('No OTP Found', 'No OTP messages found in SMS.');
           }
@@ -167,7 +171,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   continueButton: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: '#6200EE',
     paddingVertical: 12,
     paddingHorizontal: 24,
     borderRadius: 10,
